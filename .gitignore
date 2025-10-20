@@ -1,21 +1,37 @@
-# Ignorar todo el contenido dentro de config/
+# =========================
+# CONFIG - Mantener carpeta, ignorar contenido
+# =========================
 config/*
-
-# Pero mantener la carpeta en el repo
 !config/.gitkeep
 
-# Ignorar logs y otros archivos temporales
+# =========================
+# LOGS - Mantener carpeta y scripts, ignorar salidas
+# =========================
 log/*
+!log/logEvent.py
+!log/__init__.py
+!log/.gitkeep
+
+# =========================
+# PYTHON BUILD / CACHE
+# =========================
 __pycache__/
 *.pyc
-*.log
+*.pyo
+*.pyd
+
+# =========================
+# ENTORNOS Y ARCHIVOS TEMPORALES
+# =========================
+.env
+venv/
 *.tmp
 *.bak
 *.swp
+*.log
 
-# Ignorar archivos del sistema y de entorno
-.env
-venv/
-*.sqlite3
+# =========================
+# SISTEMA / EDITOR
+# =========================
 .DS_Store
 Thumbs.db
