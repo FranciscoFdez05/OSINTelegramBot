@@ -1,4 +1,21 @@
+# Ignorar todo el contenido dentro de config/
+config/*
 
-config/botToken.txt
-config/usersIDs.txt
-log/logsFile.txt
+# Pero mantener la carpeta en el repo
+!config/.gitkeep
+
+# Ignorar logs y otros archivos temporales
+log/*
+__pycache__/
+*.pyc
+*.log
+*.tmp
+*.bak
+*.swp
+
+# Ignorar archivos del sistema y de entorno
+.env
+venv/
+*.sqlite3
+.DS_Store
+Thumbs.db

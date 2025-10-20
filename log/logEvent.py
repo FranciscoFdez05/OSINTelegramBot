@@ -4,7 +4,7 @@ from pathlib import Path
 from datetime import datetime
 
 # Archivo de log por defecto: config/monitorLog.txt
-defaultLogFile = Path(__file__).resolve().parent / "logsFile.txt"
+defaultLogFile = Path(__file__).resolve().parent / "logsFile.log"
 currentLogFile = defaultLogFile
 
 def setLogFileName(fileName: str):
