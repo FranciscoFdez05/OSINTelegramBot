@@ -10,12 +10,14 @@ from telegram import Update, __version__ as tgVersion
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 
 from log.logEvent import logEvent
-from utilitis import sherlock
+from utilitis import sherlock, whois, ipinfo, dnslookup
 
 commandHandlers = {
+    "whois": whois.run,
+    "ipinfo": ipinfo.run,
     "sherlock": sherlock.run,
+    "dns": dnslookup.run,
 }
-
 
 # CONFIGURACIÓN
 configDir = "config"
