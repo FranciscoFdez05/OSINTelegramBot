@@ -1,60 +1,70 @@
+[🇪🇸 Español](docs/README-ESP.md) | [🇬🇧 English](README.md)
+
 ## OSINTelegramBot
-OSINTelegramBot es un bot de Telegram orientado a la recolección de información básica durante investigaciones OSINT. El bot se ejecuta localmente y permite lanzar, de forma controlada, comandos como `whois`, consultas DNS, peticiones a ipinfo.io y búsquedas con la herramienta Sherlock.
+OSINTelegramBot is a Telegram bot focused on collecting basic information during OSINT investigations. The bot runs locally and allows controlled execution of commands such as `whois`, DNS lookups, requests to ipinfo.io, and searches using the Sherlock tool.
 
-## Aviso legal
-Este software se proporciona con fines educativos y personales. No me hago responsable del uso que otros puedan hacer de esta herramienta. Cualquier modificación, eliminación o alteración de metadatos queda bajo la entera responsabilidad del usuario.
+## ⚠️ Legal Notice
+This software is provided for educational and personal purposes only. I am not responsible for how others may use this tool. Any modification, deletion, or alteration of metadata is the sole responsibility of the user.
 
-## Características principales
-- **Control de acceso** mediante una lista de identificadores de usuario autorizados.
-- **Ejecución segura** de utilidades externas (`whois`, `dig`, `curl` e `sherlock`) con validación de argumentos y límites de tiempo.
-- **Registro de actividad** en ficheros de log dedicados.
-- **División automática de mensajes largos** para ajustarse a las restricciones de Telegram.
+## ✨ Features ✨
+- **Access control** through a list of authorized user IDs.
+- **Secure execution** of external utilities (`whois`, `dig`, `curl`, and `sherlock`) with argument validation and time limits.
+- **Activity logging** in dedicated log files.
+- **Automatic message splitting** to comply with Telegram’s message length restrictions.
 
-## Requisitos
-- Python 3.9 o superior.
+## 🖥️ Requirements
+- Python 3.9 or higher.
 - [python-telegram-bot](https://github.com/python-telegram-bot/python-telegram-bot) >= 20.0.
-- Herramientas de línea de comandos: `whois`, `dig`, `curl` y `sherlock` disponibles en el `PATH` del sistema.
+- Command-line tools: `whois`, `dig`, `curl`, and `sherlock` available in the system’s `PATH`.
 
-Puedes usar el script `requirements.sh` como referencia para instalar dependencias en sistemas basados en Debian/Ubuntu:
+You can use the `requirements.sh` script as a reference to install dependencies on Debian/Ubuntu-based systems:
+
 ```bash
 sudo apt update
 sudo apt install python3-python-telegram-bot whois dnsutils curl
 sudo apt install sherlock
 ```
 
-## Configuración
-El bot espera encontrar sus ficheros de configuración en el directorio `config/`.
-1. **Token del bot**: crea `config/botToken.txt` con el token proporcionado por @BotFather. Solo se usa la primera línea.
-2. **Usuarios autorizados**: crea `config/usersIDs.txt` con un identificador por línea (opcionalmente separados por comas). Puedes añadir comentarios precedidos por `#`.
+## 📦 Installation Guide
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/FranciscoFdez05/OSINTelegramBot.git
+   cd OSINTelegramBot
+   ```
 
-Si alguno de los ficheros no existe o está vacío, el bot se detendrá con un mensaje de error.
+## ⚙️ Configuration
+The bot expects its configuration files to be located in the `config/` directory.
 
-## Ejecución
-1. Instala las dependencias necesarias.
-2. Ejecuta el bot:
-```bash
-python3 main.py
-```
+1. **Bot token**: create `config/botToken.txt` containing the token provided by @BotFather. Only the first line will be used.
+2. **Authorized users**: create `config/usersIDs.txt` with one ID per line (optionally separated by commas). You can add comments starting with `#`.
 
-El bot iniciará un bucle de *polling* y registrará eventos en `log/logfile.log`.
+If any of the files are missing or empty, the bot will stop with an error message.
 
-## Comandos disponibles
-Todos los comandos sólo están disponibles para los usuarios autorizados.
-- `/start` / `/help`: muestra la lista de comandos habilitados.
-- `/whois <dominio>`: ejecuta la utilidad `whois` sobre el dominio proporcionado.
-- `/dns <dominio>`: consulta registros DNS básicos usando `dig`.
-- `/ipinfo <ip>`: recupera información de ipinfo.io mediante `curl`.
-- `/sherlock <usuario>`: lanza la herramienta Sherlock para buscar un nombre de usuario en múltiples servicios.
+## 🕹️ Usage
+1. Install the required dependencies.
+2. Run the bot:
+   ```bash
+   python3 main.py
+   ```
 
-Las salidas se envían como texto plano y se fragmentan automáticamente si superan el límite configurado.
+The bot will start a *polling* loop and log events in `log/logfile.log`.
 
-## Seguridad y buenas prácticas
-- Limita la lista de usuarios autorizados a las cuentas que realmente necesiten acceso.
-- Revisa periódicamente los registros en `log/` para detectar actividad sospechosa.
-- Asegúrate de mantener actualizadas las herramientas externas y la librería `python-telegram-bot`.
+## 📋 Available Commands
+All commands are only available to authorized users.
+- `/start` / `/help`: displays the list of available commands.
+- `/whois <domain>`: runs the `whois` utility on the provided domain.
+- `/dns <domain>`: queries basic DNS records using `dig`.
+- `/ipinfo <ip>`: retrieves information from ipinfo.io using `curl`.
+- `/sherlock <username>`: launches the Sherlock tool to search for a username across multiple services.
 
+Outputs are sent as plain text and automatically split if they exceed the configured size limit.
 
-## Licencia
-📄 Este proyecto está licenciado bajo la Licencia MIT. Consulta el archivo `LICENSE` para más detalles..  
+## 🔐 Security & Best Practices
+- Limit the authorized user list to accounts that genuinely require access.
+- Periodically review logs in the `log/` directory for suspicious activity.
+- Keep external tools and the `python-telegram-bot` library up to date.
+
+## 📜 License
+📄 This project is licensed under the MIT License. See the `LICENSE` file for more details.
 
 **Developed with ❤️ by [Francisco](https://github.com/FranciscoFdez05)**
