@@ -27,7 +27,6 @@ El bot espera encontrar sus ficheros de configuración en el directorio `config/
 Si alguno de los ficheros no existe o está vacío, el bot se detendrá con un mensaje de error.
 
 ## Ejecución
----
 1. Instala las dependencias necesarias.
 2. Ejecuta el bot:
 ```bash
