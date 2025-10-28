@@ -1,6 +1,9 @@
 ## OSINTelegramBot
 OSINTelegramBot es un bot de Telegram orientado a la recolección de información básica durante investigaciones OSINT. El bot se ejecuta localmente y permite lanzar, de forma controlada, comandos como `whois`, consultas DNS, peticiones a ipinfo.io y búsquedas con la herramienta Sherlock.
 
+## Aviso legal
+Este software se proporciona con fines educativos y personales. No me hago responsable del uso que otros puedan hacer de esta herramienta. Cualquier modificación, eliminación o alteración de metadatos queda bajo la entera responsabilidad del usuario.
+
 ## Características principales
 - **Control de acceso** mediante una lista de identificadores de usuario autorizados.
 - **Ejecución segura** de utilidades externas (`whois`, `dig`, `curl` e `sherlock`) con validación de argumentos y límites de tiempo.
