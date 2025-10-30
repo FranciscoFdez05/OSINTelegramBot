@@ -162,7 +162,12 @@ async def startHandler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     texto = (
         "Bot de ejecución remota. Uso restringido.\n"
         "Comandos disponibles:\n"
-        + "".join([f"/{c}\n" for c in sorted(commandHandlers.keys())])
+        "/whois dominio o ip --> Consultar el propietario de un dominio o ip\n"
+        "/dns dominio --> Resuelve el dominio y muestra la ip\n"
+        "/ipinfo ip --> Muestra los detalles de una direccion ip\n"
+        "/serlock nombre --> Rastrear nombres de usuario\n"
+        
+        #+ "".join([f"/{c}\n" for c in sorted(commandHandlers.keys())])
     )
     await context.bot.send_message(chat_id=update.effective_chat.id, text=texto, disable_web_page_preview=True)
     userId = update.effective_user.id if update.effective_user else None
