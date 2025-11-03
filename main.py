@@ -162,7 +162,7 @@ async def startHandler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     texto = (
         "Bot de ejecución remota. Uso restringido.\n"
         "Comandos disponibles:\n"
-        "/whois dominio o ip --> Consultar el propietario de un dominio o ip\n"
+        "/whois dominio --> Consultar el propietario de un dominio o ip\n"
         "/dns dominio --> Resuelve el dominio y muestra la ip\n"
         "/ipinfo ip --> Muestra los detalles de una direccion ip\n"
         "/serlock nombre --> Rastrear nombres de usuario\n"
