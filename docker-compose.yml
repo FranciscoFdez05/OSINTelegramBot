@@ -1,0 +1,12 @@
+services:
+  bot:
+    build: .
+    container_name: osintelegrambot
+    restart: unless-stopped
+    init: true
+    environment:
+      - TZ=Europe/Madrid
+      - CONFIG_DIR=/app/config
+    volumes:
+      - ./config:/app/config
+      - ./log:/app/log

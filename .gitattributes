@@ -1,2 +1,7 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+
+# Los scripts de shell deben conservar finales de linea LF (si no, fallan en Linux)
+*.sh text eol=lf
+Dockerfile text eol=lf
+

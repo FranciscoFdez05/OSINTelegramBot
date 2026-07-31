@@ -3,25 +3,32 @@ import shutil
 import subprocess
 from typing import List, Tuple
 
-defaultArgs = []
-timeoutSeconds = 20
-safeEnv = {"PATH": "/usr/bin:/bin", "LC_ALL": "C"}
+timeoutSeconds = 30
+safeEnv = {"PATH": "/usr/bin:/bin:/usr/local/bin", "LC_ALL": "C"}
+
 
 def _resolverBinario() -> str:
-    ruta = shutil.which("whois")
+    ruta = shutil.which("wafw00f")
     if not ruta:
-        raise RuntimeError("No se encontró 'whois' en PATH.")
+        raise RuntimeError("No se encontró 'wafw00f' en PATH. Instala con: pip install wafw00f")
     return ruta
 
-def _validarArgs(args: List[str]) -> List[str]:
+
+def _validarArgs(args: List[str]) -> str:
     if not args or len(args) != 1:
-        raise RuntimeError("Uso: /whois <dominio>")
-    return args
+        raise RuntimeError("Uso: /waf <url|dominio>")
+    if args[0].startswith("-"):
+        raise RuntimeError("Uso: /waf <url|dominio>")
+    objetivo = args[0]
+    if not objetivo.startswith("http://") and not objetivo.startswith("https://"):
+        objetivo = "http://" + objetivo
+    return objetivo
+
 
 def run(args: List[str]) -> Tuple[str, int]:
     binario = _resolverBinario()
-    argsValidados = _validarArgs(args)
-    comando = [binario] + defaultArgs + argsValidados
+    objetivo = _validarArgs(args)
+    comando = [binario, objetivo]
 
     resultado = subprocess.run(
         comando,
@@ -34,7 +41,7 @@ def run(args: List[str]) -> Tuple[str, int]:
     salida = resultado.stdout or ""
     exitCode = resultado.returncode
 
-    maxBytes = 1 * 1024 * 1024  # 1 MB
+    maxBytes = 512 * 1024
     if len(salida.encode("utf-8", errors="ignore")) > maxBytes:
         salida = salida[:maxBytes] + "\n[output truncado]\n"
     return salida, exitCode

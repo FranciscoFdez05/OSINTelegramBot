@@ -1,0 +1,7 @@
+python-telegram-bot>=20.0
+holehe
+h8mail
+theHarvester
+sherlock-project
+maigret
+wafw00f

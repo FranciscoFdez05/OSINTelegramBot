@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+*.pyo
+.git/
+.gitignore
+.gitattributes
+docs/
+README.md
+LICENSE
+log/*.log
+config/
+*.sh

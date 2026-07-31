@@ -1,6 +1,4 @@
 # -*- coding: utf-8 -*-
-# Módulo de ejecución para el comando /sherlock
-
 import shutil
 import subprocess
 from typing import List, Tuple

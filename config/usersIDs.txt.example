@@ -1,0 +1,5 @@
+# IDs de Telegram autorizados a usar el bot.
+# Uno por linea, o varios separados por comas. '#' inicia un comentario.
+# El primer ID es el administrador por defecto si no existe adminIDs.txt.
+# Obten tu ID con @userinfobot.
+123456789

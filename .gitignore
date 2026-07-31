@@ -1,8 +1,9 @@
 # =========================
-# CONFIG - Mantener carpeta, ignorar contenido
+# CONFIG - Mantener carpeta y ejemplos, ignorar credenciales
 # =========================
 config/*
 !config/.gitkeep
+!config/*.example
 
 # =========================
 # LOGS - Mantener carpeta y scripts, ignorar salidas
@@ -11,6 +12,15 @@ log/*
 !log/logEvent.py
 !log/__init__.py
 !log/.gitkeep
+
+# =========================
+# UTILITIS - Mantener todos los módulos, ignorar salidas
+# =========================
+utilitis/__pycache__/
+utilitis/*.txt
+utilitis/*.json
+utilitis/*.csv
+
 
 # =========================
 # PYTHON BUILD / CACHE

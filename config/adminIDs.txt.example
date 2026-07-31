@@ -1,0 +1,3 @@
+# (Opcional) IDs con permiso para /adduser, /deluser y /users.
+# Si este fichero no existe o esta vacio, el primer ID de usersIDs.txt es el admin.
+123456789
