@@ -7,6 +7,12 @@
 <style>
 :root{--bg:#f5f6f8;--card:#fff;--fg:#1c1f26;--mut:#6b7280;--bd:#e3e6eb;--ac:#2563eb;--ok:#16a34a;--bad:#dc2626}
 @media(prefers-color-scheme:dark){:root{--bg:#0f1115;--card:#181b21;--fg:#e6e8ec;--mut:#8b93a1;--bd:#2a2e37;--ac:#60a5fa;--ok:#4ade80;--bad:#f87171}}
+:root{color-scheme:light dark}
+*{scrollbar-width:thin;scrollbar-color:var(--bd) transparent}
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-track,::-webkit-scrollbar-corner{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--bd);border-radius:8px;border:2px solid transparent;background-clip:content-box}
+::-webkit-scrollbar-thumb:hover{background:var(--mut);background-clip:content-box;border:2px solid transparent}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.5 system-ui,sans-serif}
 main{max-width:1000px;margin:0 auto;padding:16px}
 h1{font-size:20px;margin:8px 0 16px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}
