@@ -29,7 +29,8 @@ env_set() {
 USER_ACTUAL=$(env_get PANEL_USER)
 PASS_ACTUAL=$(env_get PANEL_PASSWORD)
 PORT=$(env_get PANEL_PORT)
-[ -n "$PORT" ] || PORT=6000
+[ -n "$PORT" ] || PORT=6050
+if [ "$PORT" = "6000" ] || [ "$PORT" = "6001" ]; then PORT=6050; fi  # 6000 lo bloquean los navegadores
 
 if [ -t 0 ]; then
     # Usuario
@@ -70,7 +71,14 @@ if [ -t 0 ]; then
         R=$(printf '%s' "$R" | sed 's/^0*//')
         case "$R" in
             ''|*[!0-9]*) ;;
-            *) if [ "$R" -ge 1 ] && [ "$R" -le 65535 ]; then PORT=$R; break; fi ;;
+            *) if [ "$R" -ge 1 ] && [ "$R" -le 65535 ]; then
+                   case "$R" in
+                       6000|6665|6666|6667|6668|6669|6697|5060|5061|2049|3659|4045|10080)
+                           echo "  El puerto $R lo bloquean Chrome/Vivaldi/Edge (ERR_UNSAFE_PORT). Elige otro." >&2
+                           continue ;;
+                   esac
+                   PORT=$R; break
+               fi ;;
         esac
         echo "  Tiene que ser un número entre 1 y 65535." >&2
     done

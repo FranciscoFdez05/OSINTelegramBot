@@ -243,7 +243,7 @@ def arrancarPanel(configDir: str, stats: Stats, audit: Audit, api: Dict[str, Cal
     if os.environ.get("PANEL_ENABLED", "1") == "0":
         return None
     host = os.environ.get("PANEL_HOST", "0.0.0.0")
-    port = int(os.environ.get("PANEL_PORT", "6000"))
+    port = int(os.environ.get("PANEL_PORT", "6050"))
     passwordHash = cargarPasswordHash(configDir)
     try:
         servidor = crearServidor(host, port, passwordHash, stats, audit, api)

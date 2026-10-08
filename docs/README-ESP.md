@@ -138,10 +138,10 @@ usuarios (autorizados y cualquiera que haya contactado con el bot, con botón *A
 alta/baja de usuarios, cambio del token del bot y datos de rendimiento (tiempo activo, comandos
 ejecutados, tasa de éxito, tiempo medio por comando y actividad reciente).
 
-- URL: `http://<IP-LAN-del-servidor>:6000` (escucha en `0.0.0.0` por defecto).
+- URL: `http://<IP-LAN-del-servidor>:6050` (escucha en `0.0.0.0` por defecto).
 - Contraseña: variable `PANEL_PASSWORD` o `config/panelPassword.txt`. El fichero solo guarda un hash PBKDF2. Si no existe, se genera una aleatoria, se muestra una sola vez en consola y se guarda hasheada. Para cambiarla, escribe la nueva en texto plano en ese fichero y reinicia: se convierte a hash sola.
 - Auditoría: cada comando queda en `log/audit.jsonl` (quién, comando, argumentos, resultado, código de salida, duración) y se ve en el panel. Los mensajes de usuarios no autorizados se ignoran sin responder (solo se anotan como *ignorado*, para que puedas autorizarlos desde el panel).
-- Ajustes (variables de entorno): `PANEL_HOST` (por defecto `0.0.0.0`), `PANEL_PORT` (por defecto `6000`), `PANEL_USER` (usuario opcional), `PANEL_ENABLED=0` para desactivarlo.
+- Ajustes (variables de entorno): `PANEL_HOST` (por defecto `0.0.0.0`), `PANEL_PORT` (por defecto `6050`), `PANEL_USER` (usuario opcional), `PANEL_ENABLED=0` para desactivarlo.
 - El nuevo token se aplica con el botón **Reiniciar bot**. El bot puede arrancar sin token y esperarlo desde el panel.
 - El panel va en HTTP plano: mantenlo en la LAN (no redirijas el puerto a internet) y usa una contraseña fuerte.
 

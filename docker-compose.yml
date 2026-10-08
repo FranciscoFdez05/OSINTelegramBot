@@ -9,7 +9,7 @@ services:
       - TZ=Europe/Madrid
       - CONFIG_DIR=/app/config
       - PANEL_HOST=0.0.0.0
-      - PANEL_PORT=${PANEL_PORT:-6000}
+      - PANEL_PORT=${PANEL_PORT:-6050}
       - PANEL_USER=${PANEL_USER:-}
       - PANEL_PASSWORD=${PANEL_PASSWORD:-}
       # Actualización desde el panel (los exporta docker-up.sh / docker-update.sh)
@@ -18,7 +18,7 @@ services:
       - PGID=${PGID:-0}
       - BOT_IMAGE=osintelegrambot:${BOT_VERSION:-latest}
     ports:
-      - "${PANEL_PORT:-6000}:${PANEL_PORT:-6000}"   # panel web accesible desde la LAN
+      - "${PANEL_PORT:-6050}:${PANEL_PORT:-6050}"   # panel web accesible desde la LAN
     volumes:
       - ./config:/app/config
       - ./log:/app/log
@@ -27,7 +27,7 @@ services:
       - ${PROJECT_DIR:-.}:${PROJECT_DIR:-/project}
       - /var/run/docker.sock:/var/run/docker.sock
     healthcheck:
-      test: ["CMD", "python", "-c", "import os,urllib.request as u; u.urlopen('http://127.0.0.1:%s/api/health' % os.environ.get('PANEL_PORT','6000'), timeout=3)"]
+      test: ["CMD", "python", "-c", "import os,urllib.request as u; u.urlopen('http://127.0.0.1:%s/api/health' % os.environ.get('PANEL_PORT','6050'), timeout=3)"]
       interval: 5s
       timeout: 4s
       retries: 3
