@@ -26,8 +26,9 @@ asegurar() {
         go)  go install "$origen" >/dev/null 2>&1 ;;
         nikto)
             apt_instalar perl; apt_instalar libnet-ssleay-perl
-            curl -fsSL https://github.com/sullo/nikto/archive/refs/heads/master.tar.gz | tar -xz -C /opt \
-                && rm -rf /opt/nikto && mv /opt/nikto-master /opt/nikto \
+            mkdir -p /opt/nikto \
+                && curl -fsSL https://github.com/sullo/nikto/archive/HEAD.tar.gz \
+                    | tar -xz --strip-components=1 -C /opt/nikto \
                 && ln -sf /opt/nikto/program/nikto.pl /usr/local/bin/nikto \
                 && chmod +x /opt/nikto/program/nikto.pl
             ;;

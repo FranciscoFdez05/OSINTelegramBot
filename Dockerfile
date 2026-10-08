@@ -15,11 +15,12 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 # nikto: ya no está en los repos de Debian (trixie); se instala desde GitHub
-RUN curl -fsSL https://github.com/sullo/nikto/archive/refs/heads/master.tar.gz \
-    | tar -xz -C /opt \
-    && mv /opt/nikto-master /opt/nikto \
-    && ln -s /opt/nikto/program/nikto.pl /usr/local/bin/nikto \
-    && chmod +x /opt/nikto/program/nikto.pl
+RUN mkdir -p /opt/nikto \
+    && ( curl -fsSL https://github.com/sullo/nikto/archive/HEAD.tar.gz \
+         | tar -xz --strip-components=1 -C /opt/nikto \
+         && ln -s /opt/nikto/program/nikto.pl /usr/local/bin/nikto \
+         && chmod +x /opt/nikto/program/nikto.pl ) \
+    || echo "AVISO: no se pudo instalar nikto (se reintentará al arrancar)"
 
 # phoneinfoga (binario Go)
 RUN go install github.com/sundowndev/phoneinfoga/v2/cmd/phoneinfoga@latest
