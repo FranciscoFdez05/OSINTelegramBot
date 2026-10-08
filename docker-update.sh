@@ -81,9 +81,9 @@ if [ "$SIN_PULL" -eq 0 ]; then
         error "Esto no es un clon de git; no se puede actualizar con pull."
         fallo
     fi
-    if [ -n "$(git status --porcelain --untracked-files=no 2>/dev/null)" ]; then
+    if [ -n "$(git -c core.fileMode=false status --porcelain --untracked-files=no 2>/dev/null)" ]; then
         error "Hay cambios locales en ficheros versionados y el pull podría chocar."
-        git status --short --untracked-files=no
+        git -c core.fileMode=false status --short --untracked-files=no
         echo
         echo "Los ajustes de producción van en .env y config/ (no se versionan)."
         echo "Para descartar los cambios locales:  git checkout -- .   y vuelve a actualizar."
