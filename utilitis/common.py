@@ -128,6 +128,21 @@ def validarTelefono(args: List[str], usage: str) -> str:
 
 
 # EJECUCIÓN
+_ansiRe = re.compile(
+    r"\x1b\][^\x07\x1b]*(?:\x07|\x1b\\)"   # OSC (hipervínculos de terminal: ESC ] 8 ;; url ST)
+    r"|\x1b\[[0-?]*[ -/]*[@-~]"            # CSI (colores, cursor)
+    r"|\x1b[@-Z\\-_]"
+)
+_ruidoRe = re.compile(r"^(Update available!|Go deeper than a username|Explore public profiles|Try OSINTSearch)", re.I)
+
+
+def limpiarSalida(texto: str) -> str:
+    """Quita secuencias de escape de terminal y los anuncios de las herramientas."""
+    texto = _ansiRe.sub("", texto).replace("\r", "")
+    lineas = [l for l in texto.split("\n") if not _ruidoRe.match(l.strip())]
+    return re.sub(r"\n{3,}", "\n\n", "\n".join(lineas)).strip() + "\n"
+
+
 def resolverBinario(*nombres: str, ayuda: str = "") -> str:
     for nombre in nombres:
         ruta = shutil.which(nombre)
@@ -175,7 +190,7 @@ def ejecutar(comando: List[str], nombre: str, path: Optional[str] = None) -> Tup
         salida = (salida or "") + f"\n[tiempo agotado tras {timeout}s: proceso terminado]\n"
         codigo = 124
 
-    salida = salida or ""
+    salida = limpiarSalida(salida or "")
     if len(salida) > maxBytes:
         salida = salida[:maxBytes] + "\n[output truncado]\n"
     return salida, codigo

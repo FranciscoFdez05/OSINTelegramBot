@@ -248,6 +248,7 @@ def makeHandler(commandName: str):
             return
 
         args = list(context.args or [])
+        await context.bot.send_message(chat_id=chatId, text=f"⏳ Ejecutando /{commandName}…", disable_web_page_preview=True)
         inicio = time.monotonic()
         try:
             # en un hilo para no bloquear el bucle de eventos mientras corre la herramienta
@@ -396,6 +397,48 @@ def accionListUsers(update: Update, context: ContextTypes.DEFAULT_TYPE, adminId:
     return (texto, f"/users consultado por admin_id={adminId}")
 
 
+# MENÚ DE COMANDOS (lo que Telegram sugiere al escribir "/")
+menuComandos = [
+    ("start", "Ayuda y lista de comandos"),
+    ("info", "Ayuda y lista de comandos"),
+    ("whois", "<dominio|ip> Propietario WHOIS"),
+    ("dns", "<dominio> Resolución DNS"),
+    ("ipinfo", "<ip> Detalles de una IP"),
+    ("nmap", "<ip|host> Escaneo de puertos"),
+    ("gobuster", "<url> Enumeración de rutas"),
+    ("harvester", "<dominio> Emails y subdominios"),
+    ("dnsrecon", "<dominio> Enumeración DNS"),
+    ("whatweb", "<url> Tecnologías web"),
+    ("nikto", "<url> Vulnerabilidades web"),
+    ("sslscan", "<host> Análisis TLS/SSL"),
+    ("waf", "<url> Detección de WAF"),
+    ("sherlock", "<usuario> Búsqueda en redes"),
+    ("maigret", "<usuario> Búsqueda avanzada"),
+    ("holehe", "<email> Servicios registrados"),
+    ("h8mail", "<email> Brechas de datos"),
+    ("emailrep", "<email> Reputación del email"),
+    ("phone", "<+34XXXXXXXXX> Info de teléfono"),
+]
+menuAdmin = [
+    ("adduser", "<userID> Autorizar usuario"),
+    ("deluser", "<userID> Revocar usuario"),
+    ("users", "Listar usuarios autorizados"),
+]
+
+async def publicarMenu(app) -> None:
+    """Registra los comandos en Telegram: los usuarios autorizados ven el menú completo
+    y los admins además los de administración. El resto no ve ninguno."""
+    from telegram import BotCommand, BotCommandScopeChat, BotCommandScopeDefault
+    try:
+        await app.bot.set_my_commands([], scope=BotCommandScopeDefault())
+        for uid in allowedUserIds:
+            cmds = menuComandos + (menuAdmin if usuarioAdmin(uid) else [])
+            await app.bot.set_my_commands([BotCommand(c, d[:256]) for c, d in cmds],
+                                          scope=BotCommandScopeChat(chat_id=uid))
+    except Exception as e:
+        logEvent(f"No se pudo publicar el menú de comandos: {type(e).__name__} {e}")
+
+
 # MAIN
 def main() -> None:
     os.makedirs(os.path.dirname(logFilePath), exist_ok=True)
@@ -421,13 +464,14 @@ def main() -> None:
     print(f"[DEBUG] Arrancando bot telegram (versión librería {tgVersion})")
     print(f"[DEBUG] Usuarios autorizados: {allowedUserIds} | admins: {adminUserIds}")
     # concurrent_updates: varias consultas largas a la vez sin bloquear al resto de usuarios
-    app = ApplicationBuilder().token(botToken).concurrent_updates(True).build()
+    app = ApplicationBuilder().token(botToken).concurrent_updates(True).post_init(publicarMenu).build()
 
     # grupo -1: se ejecuta antes que cualquier otro handler y descarta a los no autorizados
     app.add_handler(TypeHandler(Update, filtroAcceso), group=-1)
 
     app.add_handler(CommandHandler("start", startHandler))
     app.add_handler(CommandHandler("help", startHandler))
+    app.add_handler(CommandHandler("info", startHandler))
 
     # comandos de administración de la whitelist
     app.add_handler(CommandHandler("adduser", makeAdminHandler("adduser", accionAddUser)))
