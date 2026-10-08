@@ -154,7 +154,8 @@ ejecutados, tasa de éxito, tiempo medio por comando y actividad reciente).
 
 ```bash
 # Herramientas del sistema
-sudo apt install -y nmap gobuster dirb nikto whatweb sslscan dnsrecon curl whois dnsutils golang-go
+sudo apt install -y nmap gobuster dirb whatweb sslscan dnsrecon curl whois dnsutils golang-go
+# nikto ya no está en Debian trixie: git clone https://github.com/sullo/nikto y enlaza program/nikto.pl
 
 # phoneinfoga
 go install github.com/sundowndev/phoneinfoga/v2/cmd/phoneinfoga@latest

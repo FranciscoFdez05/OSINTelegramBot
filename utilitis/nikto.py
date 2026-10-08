@@ -8,7 +8,7 @@ usage = "/nikto <url|ip>"
 defaultArgs = ["-nointeractive", "-maxtime", "90s"]
 
 def run(args: List[str]) -> Tuple[str, int]:
-    binario = common.resolverBinario("nikto", ayuda="Instala con: apt install nikto")
+    binario = common.resolverBinario("nikto", ayuda="Instala nikto desde https://github.com/sullo/nikto")
     objetivo = common.validarUrl(args, usage)
     comando = [binario, "-h", objetivo] + defaultArgs
     return common.ejecutar(comando, nombre)

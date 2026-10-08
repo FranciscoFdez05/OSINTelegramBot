@@ -10,3 +10,4 @@ LICENSE
 log/*.log
 config/
 *.sh
+!docker-entrypoint.sh
