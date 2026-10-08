@@ -23,6 +23,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # phoneinfoga (binario Go)
 RUN go install github.com/sundowndev/phoneinfoga/v2/cmd/phoneinfoga@latest
 
+# CLI de Docker + Compose: el panel web los usa para lanzar docker-update.sh
+COPY --from=docker:27-cli /usr/local/bin/docker /usr/local/bin/docker
+COPY --from=docker:27-cli /usr/local/libexec/docker/cli-plugins/docker-compose /usr/local/lib/docker/cli-plugins/docker-compose
+
 WORKDIR /app
 
 # Dependencias Python

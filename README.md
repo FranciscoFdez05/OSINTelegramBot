@@ -130,23 +130,24 @@ survive container restarts and rebuilds.
 
 ---
 
+## 🌐 Web Control Panel
+
+A small dashboard starts together with the bot (standard library only, no extra dependencies):
+user list (authorized users and anyone who has contacted the bot, with a one-click *Authorize*),
+add/remove users, change the bot token, and performance data (uptime, commands run, success rate,
+average time per command, recent activity).
+
+- URL: `http://<server-LAN-IP>:6000` (listens on `0.0.0.0` by default).
+- Password: `PANEL_PASSWORD` env var, or `config/panelPassword.txt`. The file only stores a PBKDF2 hash. If it does not exist, a random password is generated, printed once in the console and saved hashed. To change it, write the new password in plain text in that file and restart: it is hashed automatically.
+- Audit: every command is logged in `log/audit.jsonl` (who, command, arguments, result, exit code, duration) and shown in the panel. Messages from users who are not authorized are ignored without any reply (only recorded as *ignorado*, so you can authorize them from the panel).
+- Settings (env vars): `PANEL_HOST` (default `0.0.0.0`), `PANEL_PORT` (default `6000`), `PANEL_USER` (optional username), `PANEL_ENABLED=0` to disable.
+- A new token is applied with the **Reiniciar bot** button. The bot can start without a token and wait for it from the panel.
+- **Updates**: the panel shows the installed version and the latest one on GitHub, and an **Actualizar** button runs `docker-update.sh` (git pull, rebuild, health check, automatic rollback) without SSH. The same script works from the shell: `./docker-update.sh`. It needs the stack started with `./docker-up.sh` (it mounts the project folder and `/var/run/docker.sock` into the bot container, which is root-equivalent on the host, so keep the panel password strong). The version lives in `version.py`; bump it when you publish a release.
+- The panel is plain HTTP: keep it on your LAN (do not forward the port to the internet) and use a strong password.
+
+---
+
 ## 🖥️ Running Without Docker
-
-### Automatic installer (Debian / Ubuntu / Kali / WSL)
-
-`install.sh` checks every dependency one by one and installs **only what is missing**
-(apt packages, Python tools, the `phoneinfoga` Go binary and the gobuster wordlist),
-then creates the empty config files.
-
-```bash
-chmod +x install.sh
-./install.sh            # install whatever is missing
-./install.sh --check    # only report what is missing, install nothing
-./install.sh --yes      # unattended, no prompts
-```
-
-`--check` exits with code `0` if everything is present and `1` if something is missing,
-so it can be used in scripts.
 
 ### Manual installation
 

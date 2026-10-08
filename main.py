@@ -2,14 +2,20 @@
 # -*- coding: utf-8 -*-
 # Requisitos: python>=3.9, python-telegram-bot>=20.0
 
+import asyncio
 import os
+import sys
+import time
 from datetime import datetime
 from typing import Optional, List, Callable, Tuple, Dict
 
 from telegram import Update, __version__ as tgVersion
-from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
+from telegram.ext import ApplicationBuilder, ApplicationHandlerStop, CommandHandler, ContextTypes, TypeHandler
 
 from log.logEvent import logEvent
+from webpanel.audit import Audit
+from webpanel.stats import Stats
+from webpanel.server import arrancarPanel
 from utilitis import sherlock, whois, ipinfo, dnslookup
 from utilitis import nmap, gobuster, holehe, theharvester, h8mail, emailrep
 from utilitis import maigret, dnsrecon, whatweb, nikto, sslscan, wafw00f, phoneinfoga
@@ -94,19 +100,17 @@ botToken = cargarBotToken(botTokenFile)
 allowedUserIds = cargarAllowedUserIds(allowedUsersFile)
 adminUserIds = cargarAdminUserIds(adminUsersFile, allowedUserIds)
 
-def validarConfig() -> None:
-    problemas = []
+def avisarConfig() -> None:
+    """Con el panel web, token y usuarios pueden configurarse después de arrancar."""
     if not botToken:
-        problemas.append(f"Falta token del bot. Crea {botTokenFile} con el token (una línea).")
+        logEvent(f"AVISO: falta token del bot. Ponlo en el panel web o en {botTokenFile}.")
     if not allowedUserIds:
-        problemas.append(f"Falta lista de usuarios permitidos o está vacía. Crea {allowedUsersFile} con tu user_id.")
-    if problemas:
-        for p in problemas:
-            logEvent("ERROR:"), p
-            #print("ERROR:", p)          
-        raise SystemExit(1)
-        
-validarConfig()
+        logEvent(f"AVISO: no hay usuarios autorizados. Añádelos en el panel web o en {allowedUsersFile}.")
+
+avisarConfig()
+
+stats = Stats(os.path.join(configDir, "stats.json"))
+audit = Audit(os.path.join("log", "audit.jsonl"))
 
 
 # UTILIDADES
@@ -172,6 +176,35 @@ def eliminarUsuarioPermitido(userId: int) -> bool:
         f.write("\n".join(conservadas).strip() + "\n")
     return True
 
+def guardarBotToken(token: str) -> None:
+    os.makedirs(configDir, exist_ok=True)
+    with open(botTokenFile, "w", encoding="utf-8") as f:
+        f.write(token.strip() + "\n")
+
+def reiniciarProceso() -> None:
+    """Relanza el proceso para aplicar un nuevo token."""
+    logEvent("Reiniciando proceso")
+    os.execv(sys.executable, [sys.executable] + sys.argv)
+
+def registrarContacto(update: Update, comando: str, permitido: bool) -> None:
+    u = update.effective_user
+    if u:
+        stats.recordContact(u.id, u.username, u.full_name, comando, permitido)
+
+async def filtroAcceso(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Primer filtro de todo update: si el usuario no está autorizado no se procesa nada
+    (ni respuesta ni handlers). Solo se anota el contacto para poder autorizarlo desde el panel."""
+    u = update.effective_user
+    if u and usuarioPermitido(u.id):
+        return
+    texto = (update.effective_message.text or "") if update.effective_message else ""
+    comando = texto.split()[0].lstrip("/").split("@")[0] if texto.startswith("/") and texto.split() else "(mensaje)"
+    if u:
+        stats.recordContact(u.id, u.username, u.full_name, comando, False)
+        audit.registrar(u.id, u.username, comando, None, "ignorado")
+        logEvent(f"Ignorado user_id={u.id} (no autorizado)")
+    raise ApplicationHandlerStop
+
 def chunkText(texto: str, maxLen: int) -> List[str]:
     if len(texto) <= maxLen:
         return [texto]
@@ -205,30 +238,38 @@ def makeHandler(commandName: str):
         logEvent(f"Comando recibido: /{commandName} por user_id={userId} chat_id={chatId} username={userName}")
         #print(f"[DEBUG] input user: /{commandName} {' '.join(context.args) if context.args else '(sin-args)'} from user_id={userId}")
 
-        if not usuarioPermitido(userId):
-            await context.bot.send_message(chat_id=chatId, text="Acceso denegado.", disable_web_page_preview=True)
-            logEvent(f"Acceso denegado a user_id={userId}")
-            #print(f"[DEBUG] acceso denegado para user_id={userId}")
+        if not usuarioPermitido(userId):  # defensa extra; filtroAcceso ya lo descarta
             return
+        registrarContacto(update, commandName, True)
 
         if commandName not in commandHandlers:
             await context.bot.send_message(chat_id=chatId, text="Comando no permitido.", disable_web_page_preview=True)
             logEvent(f"[DEBUG] comando no permitido: {commandName}")
-            #print(f"[DEBUG] comando no permitido: {commandName}")
             return
 
+        args = list(context.args or [])
+        inicio = time.monotonic()
         try:
-            salida, exitCode = commandHandlers[commandName](context.args or [])
+            # en un hilo para no bloquear el bucle de eventos mientras corre la herramienta
+            salida, exitCode = await asyncio.to_thread(commandHandlers[commandName], args)
         except RuntimeError as e:
+            dur = time.monotonic() - inicio
+            stats.recordExecution(commandName, dur, False)
+            audit.registrar(userId, usuario.username, commandName, args, "error", None, dur)
             await context.bot.send_message(chat_id=chatId, text=f"Error: {e}", disable_web_page_preview=True)
             logEvent(f"[DEBUG] RuntimeError en {commandName}: {e}")
-            #print(f"[DEBUG] RuntimeError en {commandName}: {e}")
             return
         except Exception as e:
+            dur = time.monotonic() - inicio
+            stats.recordExecution(commandName, dur, False)
+            audit.registrar(userId, usuario.username, commandName, args, "error", None, dur)
             await context.bot.send_message(chat_id=chatId, text=f"Error ejecutando /{commandName}: {type(e).__name__} {e}", disable_web_page_preview=True)
             logEvent(f"[DEBUG] Excepción en {commandName}: {type(e).__name__} {e}")
-            #print(f"[DEBUG] Excepción en {commandName}: {type(e).__name__} {e}")
             return
+
+        dur = time.monotonic() - inicio
+        stats.recordExecution(commandName, dur, exitCode == 0)
+        audit.registrar(userId, usuario.username, commandName, args, "ok" if exitCode == 0 else "error", exitCode, dur)
 
         if not salida:
             salida = f"(sin salida, código de retorno {exitCode})"
@@ -273,6 +314,7 @@ async def startHandler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         "/deluser <userID>      Revocar a un usuario\n"
         "/users                 Listar usuarios autorizados\n"
     )
+    registrarContacto(update, "start", usuarioPermitido(update.effective_user.id) if update.effective_user else False)
     await context.bot.send_message(chat_id=update.effective_chat.id, text=texto, disable_web_page_preview=True)
     userId = update.effective_user.id if update.effective_user else None
     userName = update.effective_user.username if update.effective_user else "(sin-username)"
@@ -290,6 +332,9 @@ def makeAdminHandler(commandName: str, accion: Callable[[Update, ContextTypes.DE
 
         logEvent(f"Comando recibido: /{commandName} por user_id={userId} chat_id={chatId}")
 
+        registrarContacto(update, commandName, usuarioAdmin(userId))
+        audit.registrar(userId, usuario.username if usuario else None, commandName, list(context.args or []),
+                        "ok" if usuarioAdmin(userId) else "denegado")
         if not usuarioAdmin(userId):
             await context.bot.send_message(chat_id=chatId, text="Acceso denegado.", disable_web_page_preview=True)
             logEvent(f"Acceso denegado (admin) a user_id={userId} en /{commandName}")
@@ -353,17 +398,33 @@ def accionListUsers(update: Update, context: ContextTypes.DEFAULT_TYPE, adminId:
 
 # MAIN
 def main() -> None:
-    if not botToken:
-        print("ERROR: configura config/botToken.txt con el token.")
-        return
-
     os.makedirs(os.path.dirname(logFilePath), exist_ok=True)
+
+    hiloPanel = arrancarPanel(configDir, stats, audit, {
+        "getUsers": lambda: (list(allowedUserIds), list(adminUserIds)),
+        "addUser": anadirUsuarioPermitido,
+        "delUser": eliminarUsuarioPermitido,
+        "getToken": lambda: botToken,
+        "setToken": guardarBotToken,
+        "restart": reiniciarProceso,
+    })
+
+    if not botToken:
+        print(f"AVISO: falta el token del bot. Configúralo en el panel web o en {botTokenFile}.")
+        if hiloPanel is None:
+            raise SystemExit(1)
+        hiloPanel.join()  # esperar a que el panel guarde el token y reinicie
+        return
 
     logEvent(f"Arrancando bot telegram (versión librería {tgVersion})")
     logEvent(f"Usuarios autorizados: {allowedUserIds} | admins: {adminUserIds}")
     print(f"[DEBUG] Arrancando bot telegram (versión librería {tgVersion})")
     print(f"[DEBUG] Usuarios autorizados: {allowedUserIds} | admins: {adminUserIds}")
-    app = ApplicationBuilder().token(botToken).build()
+    # concurrent_updates: varias consultas largas a la vez sin bloquear al resto de usuarios
+    app = ApplicationBuilder().token(botToken).concurrent_updates(True).build()
+
+    # grupo -1: se ejecuta antes que cualquier otro handler y descarta a los no autorizados
+    app.add_handler(TypeHandler(Update, filtroAcceso), group=-1)
 
     app.add_handler(CommandHandler("start", startHandler))
     app.add_handler(CommandHandler("help", startHandler))

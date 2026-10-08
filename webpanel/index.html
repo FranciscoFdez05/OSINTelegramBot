@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>OSINT Bot Panel</title>
+<style>
+:root{--bg:#f5f6f8;--card:#fff;--fg:#1c1f26;--mut:#6b7280;--bd:#e3e6eb;--ac:#2563eb;--ok:#16a34a;--bad:#dc2626}
+@media(prefers-color-scheme:dark){:root{--bg:#0f1115;--card:#181b21;--fg:#e6e8ec;--mut:#8b93a1;--bd:#2a2e37;--ac:#60a5fa;--ok:#4ade80;--bad:#f87171}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.5 system-ui,sans-serif}
+main{max-width:1000px;margin:0 auto;padding:16px}
+h1{font-size:20px;margin:8px 0 16px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}
+h2{font-size:15px;margin:0 0 12px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:8px;padding:16px;margin-bottom:16px}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px}
+.tile b{display:block;font-size:22px}.tile span{color:var(--mut);font-size:12px}
+table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--bd);white-space:nowrap}
+th{color:var(--mut);font-weight:500;font-size:12px}.scroll{overflow-x:auto}
+input{padding:7px 10px;border:1px solid var(--bd);border-radius:6px;background:var(--bg);color:var(--fg);font:inherit}
+button{padding:7px 12px;border:0;border-radius:6px;background:var(--ac);color:#fff;font:inherit;cursor:pointer}
+button.sec{background:transparent;color:var(--fg);border:1px solid var(--bd)}button.bad{background:var(--bad)}
+button.sm{padding:3px 8px;font-size:12px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.tag{font-size:11px;padding:1px 6px;border-radius:9px;border:1px solid var(--bd);color:var(--mut)}
+.ok{color:var(--ok)}.bad-t{color:var(--bad)}.mut{color:var(--mut)}
+#msg{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:8px 14px;border-radius:6px;display:none}
+#login{max-width:340px;margin:20vh auto}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<div id="login" class="card" hidden>
+  <h2>OSINT Bot - Acceso</h2>
+  <form class="row" id="loginForm"><input id="usr" placeholder="Usuario (si se configuró)" autocomplete="username" style="flex:1"><input type="password" id="pw" placeholder="Contraseña" autocomplete="current-password" required style="flex:1"><button>Entrar</button></form>
+</div>
+<main id="app" hidden>
+  <h1><span>OSINT Bot - Panel <small class="mut" id="ver"></small></span> <span class="row"><button class="sec sm" id="restart">Reiniciar bot</button><button class="sec sm" id="logout">Salir</button></span></h1>
+
+  <div class="card"><h2>Versión</h2>
+    <p style="margin-top:0">Instalada: <b id="vCur">-</b> · Última en GitHub: <b id="vLat">-</b> <span id="vTag"></span></p>
+    <div class="row"><button class="sec sm" id="vCheck">Buscar actualizaciones</button><button class="sm" id="vUpd">Actualizar</button></div>
+    <p class="mut" id="vInfo" style="margin-bottom:0" hidden></p>
+    <pre id="vLog" class="scroll" style="max-height:220px;font-size:12px;margin:8px 0 0" hidden></pre>
+  </div>
+
+  <div class="card"><h2>Rendimiento</h2>
+    <div class="tiles" id="tiles"></div>
+    <div class="scroll" style="margin-top:12px"><table><thead><tr><th>Comando</th><th>Ejecuciones</th><th>Errores</th><th>Tiempo medio</th></tr></thead><tbody id="cmds"></tbody></table></div>
+  </div>
+
+  <div class="card"><h2>Usuarios</h2>
+    <form class="row" id="addForm" style="margin-bottom:12px"><input id="newId" inputmode="numeric" placeholder="ID de Telegram" required><button>Añadir usuario</button></form>
+    <div class="scroll"><table><thead><tr><th>ID</th><th>Usuario</th><th>Estado</th><th>Comandos</th><th>Denegados</th><th>Último contacto</th><th></th></tr></thead><tbody id="users"></tbody></table></div>
+  </div>
+
+  <div class="card"><h2>Token del bot</h2>
+    <p class="mut">Actual: <code id="tokenNow"></code></p>
+    <form class="row" id="tokenForm"><input id="token" type="password" placeholder="123456:ABC..." autocomplete="off" required style="flex:1;min-width:240px"><button>Guardar token</button></form>
+    <p class="mut" style="margin-bottom:0">Tras guardar, pulsa «Reiniciar bot» para aplicarlo.</p>
+  </div>
+
+  <div class="card"><h2>Actividad reciente</h2>
+    <div class="scroll"><table><thead><tr><th>Hora</th><th>Usuario</th><th>Comando</th><th>Resultado</th></tr></thead><tbody id="recent"></tbody></table></div>
+  </div>
+
+  <div class="card"><h2>Auditoría</h2>
+    <div class="scroll"><table><thead><tr><th>Hora</th><th>Usuario</th><th>Comando</th><th>Argumentos</th><th>Resultado</th><th>Exit</th><th>Duración</th></tr></thead><tbody id="audit"></tbody></table></div>
+  </div>
+</main>
+<div id="msg"></div>
+<script>
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function toast(t){const m=$('msg');m.textContent=t;m.style.display='block';clearTimeout(m._t);m._t=setTimeout(()=>m.style.display='none',3500)}
+async function api(path,body){
+  const r=await fetch(path,{method:body?'POST':'GET',headers:{'X-Panel':'1','Content-Type':'application/json'},body:body?JSON.stringify(body):undefined});
+  const d=await r.json().catch(()=>({}));
+  if(r.status===401&&path!=='/api/login'){show(false);throw new Error('Sesión no iniciada')}
+  if(!r.ok)throw new Error(d.error||'Error');
+  return d;
+}
+const act=async(p,b)=>{try{const d=await api(p,b);if(d.msg)toast(d.msg);refresh();return d}catch(e){toast(e.message)}};
+const fmtT=s=>{const d=Math.floor(s/86400),h=Math.floor(s%86400/3600),m=Math.floor(s%3600/60);return (d?d+'d ':'')+(h||d?h+'h ':'')+m+'m'};
+const fmtD=t=>t?new Date(t*1000).toLocaleString():'-';
+function show(on){$('app').hidden=!on;$('login').hidden=on}
+async function refresh(){
+  let s;try{s=await api('/api/state')}catch{return}
+  show(true);$('ver').textContent='v'+s.version;
+  const p=s.perf,rate=p.totalCommands?Math.round(100*(p.totalCommands-p.totalErrors)/p.totalCommands)+'%':'-';
+  $('tiles').innerHTML=[[fmtT(p.uptime),'En marcha'],[p.totalCommands,'Comandos ejecutados'],[rate,'Éxito'],[p.avgSeconds+' s','Tiempo medio'],[s.users.length,'Contactos']]
+    .map(([v,l])=>`<div class="tile"><b>${esc(v)}</b><span>${l}</span></div>`).join('');
+  const c=Object.entries(p.commands).sort((a,b)=>b[1].count-a[1].count);
+  $('cmds').innerHTML=c.map(([k,v])=>`<tr><td>/${esc(k)}</td><td>${v.count}</td><td class="${v.errors?'bad-t':''}">${v.errors}</td><td>${v.avgSeconds} s</td></tr>`).join('')||'<tr><td colspan=4 class="mut">Sin datos</td></tr>';
+  $('users').innerHTML=s.users.map(u=>{
+    const st=u.admin?'<span class="tag">admin</span>':u.allowed?'<span class="ok">autorizado</span>':'<span class="bad-t">sin acceso</span>';
+    const btn=u.admin?'':u.allowed?`<button class="bad sm" data-del="${u.id}">Quitar</button>`:`<button class="sm" data-add="${u.id}">Autorizar</button>`;
+    return `<tr><td>${u.id}</td><td>${esc(u.username?'@'+u.username:u.name||'-')}</td><td>${st}</td><td>${u.commands}</td><td>${u.denied}</td><td>${fmtD(u.last)}</td><td>${btn}</td></tr>`}).join('')||'<tr><td colspan=7 class="mut">Sin usuarios</td></tr>';
+  $('tokenNow').textContent=s.token||'(no configurado)';
+  $('audit').innerHTML=s.audit.map(e=>`<tr><td>${fmtD(e.t)}</td><td>${esc(e.username?'@'+e.username:e.user??'-')} <span class="mut">${e.user??''}</span></td><td>/${esc(e.cmd)}</td><td>${esc((e.args||[]).join(' '))}</td><td class="${e.result==='ok'?'ok':'bad-t'}">${esc(e.result)}</td><td>${e.exit??''}</td><td>${e.seconds!=null?e.seconds+' s':''}</td></tr>`).join('')||'<tr><td colspan=7 class="mut">Sin eventos</td></tr>';
+  $('recent').innerHTML=p.recent.map(e=>`<tr><td>${fmtD(e.t)}</td><td>${e.user}</td><td>/${esc(e.cmd)}</td><td class="${e.status==='ok'?'ok':'bad-t'}">${esc(e.status)}</td></tr>`).join('')||'<tr><td colspan=4 class="mut">Sin actividad</td></tr>';
+}
+$('loginForm').onsubmit=async e=>{e.preventDefault();try{await api('/api/login',{user:$('usr').value,password:$('pw').value});$('pw').value='';refresh()}catch(x){toast(x.message)}};
+$('logout').onclick=async()=>{await api('/api/logout',{});show(false)};
+$('addForm').onsubmit=async e=>{e.preventDefault();if(await act('/api/users/add',{id:$('newId').value}))$('newId').value=''};
+$('tokenForm').onsubmit=async e=>{e.preventDefault();if(await act('/api/token',{token:$('token').value}))$('token').value=''};
+$('restart').onclick=()=>{if(confirm('¿Reiniciar el bot?'))act('/api/restart',{})};
+$('users').onclick=e=>{const d=e.target.dataset;if(d.del&&confirm('¿Quitar a '+d.del+'?'))act('/api/users/del',{id:d.del});if(d.add)act('/api/users/add',{id:d.add})};
+let upTimer=null;
+async function updStatus(force){
+  let u;
+  try{u=await api('/api/update'+(force?'?force=1':''))}
+  catch{if(!$('app').hidden){$('vInfo').hidden=false;$('vInfo').textContent='Reiniciando el bot... esperando a que vuelva.'}return}
+  $('vCur').textContent=u.current;$('vLat').textContent=u.latest||'?';
+  $('vTag').innerHTML=u.running?'<span class="tag">actualizando...</span>':u.available?'<span class="tag ok">nueva versión disponible</span>':u.latest?'<span class="tag">al día</span>':'';
+  const info=u.checkError||(!u.enabled?u.reason:'')||(u.result==='ok'?'Última actualización: correcta.':u.result==='fail'?'Última actualización: FALLÓ (se vuelve a la versión anterior si es posible).':'');
+  $('vInfo').hidden=!info;$('vInfo').textContent=info;
+  $('vLog').hidden=!u.log;$('vLog').textContent=u.log;$('vLog').scrollTop=1e9;
+  $('vUpd').disabled=!u.enabled||u.running;$('vUpd').textContent=u.available?'Actualizar a '+u.latest:'Reconstruir / actualizar';
+  clearInterval(upTimer);upTimer=u.running?setInterval(()=>updStatus(),2500):null;
+}
+$('vCheck').onclick=()=>updStatus(true);
+$('vUpd').onclick=async()=>{if(!confirm('El bot se reiniciará durante la actualización. ¿Continuar?'))return;await act('/api/update/start',{});updStatus()};
+refresh();updStatus();setInterval(()=>{if(!$('app').hidden)refresh()},10000);
+</script>
+</body>
+</html>

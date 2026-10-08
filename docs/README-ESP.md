@@ -131,23 +131,24 @@ los cambios sobreviven a reinicios y reconstrucciones del contenedor.
 
 ---
 
+## 🌐 Panel de control web
+
+Junto al bot arranca un pequeño panel (solo librería estándar, sin dependencias extra): lista de
+usuarios (autorizados y cualquiera que haya contactado con el bot, con botón *Autorizar*),
+alta/baja de usuarios, cambio del token del bot y datos de rendimiento (tiempo activo, comandos
+ejecutados, tasa de éxito, tiempo medio por comando y actividad reciente).
+
+- URL: `http://<IP-LAN-del-servidor>:6000` (escucha en `0.0.0.0` por defecto).
+- Contraseña: variable `PANEL_PASSWORD` o `config/panelPassword.txt`. El fichero solo guarda un hash PBKDF2. Si no existe, se genera una aleatoria, se muestra una sola vez en consola y se guarda hasheada. Para cambiarla, escribe la nueva en texto plano en ese fichero y reinicia: se convierte a hash sola.
+- Auditoría: cada comando queda en `log/audit.jsonl` (quién, comando, argumentos, resultado, código de salida, duración) y se ve en el panel. Los mensajes de usuarios no autorizados se ignoran sin responder (solo se anotan como *ignorado*, para que puedas autorizarlos desde el panel).
+- Ajustes (variables de entorno): `PANEL_HOST` (por defecto `0.0.0.0`), `PANEL_PORT` (por defecto `6000`), `PANEL_USER` (usuario opcional), `PANEL_ENABLED=0` para desactivarlo.
+- El nuevo token se aplica con el botón **Reiniciar bot**. El bot puede arrancar sin token y esperarlo desde el panel.
+- El panel va en HTTP plano: mantenlo en la LAN (no redirijas el puerto a internet) y usa una contraseña fuerte.
+
+- **Actualizaciones**: el panel muestra la versión instalada y la última en GitHub, y el botón **Actualizar** ejecuta `docker-update.sh` (git pull, reconstruir, comprobación de salud y vuelta atrás automática) sin entrar por SSH. El mismo script sirve desde consola: `./docker-update.sh`. Requiere haber arrancado con `./docker-up.sh` (monta la carpeta del proyecto y `/var/run/docker.sock` en el contenedor, lo que equivale a root en el host: usa una contraseña de panel fuerte). La versión está en `version.py`; súbela al publicar una release.
+---
+
 ## 🖥️ Ejecución sin Docker
-
-### Instalador automático (Debian / Ubuntu / Kali / WSL)
-
-`install.sh` comprueba una por una todas las dependencias e instala **solo las que
-faltan** (paquetes apt, herramientas Python, el binario Go de `phoneinfoga` y la
-wordlist de gobuster), y después crea los ficheros de configuración vacíos.
-
-```bash
-chmod +x install.sh
-./install.sh            # instala lo que falte
-./install.sh --check    # solo informa de lo que falta, no instala nada
-./install.sh --yes      # desatendido, sin preguntas
-```
-
-`--check` termina con código `0` si está todo y `1` si falta algo, así que se puede
-usar dentro de otros scripts.
 
 ### Instalación manual
 
