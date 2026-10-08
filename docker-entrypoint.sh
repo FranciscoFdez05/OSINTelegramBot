@@ -23,7 +23,11 @@ asegurar() {
     case "$metodo" in
         apt) apt_instalar "$origen" ;;
         pip) pip install --no-cache-dir "$origen" >/dev/null 2>&1 ;;
-        go)  go install "$origen" >/dev/null 2>&1 ;;
+        phoneinfoga)
+            case "$(uname -m)" in aarch64) a=arm64;; armv7l) a=armv7;; i686|i386) a=i386;; *) a=x86_64;; esac
+            curl -fsSL "https://github.com/sundowndev/phoneinfoga/releases/latest/download/phoneinfoga_Linux_$a.tar.gz" \
+                | tar -xz -C /usr/local/bin phoneinfoga
+            ;;
         nikto)
             apt_instalar perl; apt_instalar libnet-ssleay-perl
             mkdir -p /opt/nikto \
@@ -51,7 +55,7 @@ asegurar dnsrecon     apt  dnsrecon
 asegurar curl         apt  curl
 asegurar whois        apt  whois
 asegurar dig          apt  dnsutils
-asegurar phoneinfoga  go   github.com/sundowndev/phoneinfoga/v2/cmd/phoneinfoga@latest
+asegurar phoneinfoga  phoneinfoga -
 asegurar holehe       pip  holehe
 asegurar h8mail       pip  h8mail
 asegurar theHarvester pip  theHarvester

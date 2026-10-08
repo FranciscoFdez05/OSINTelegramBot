@@ -153,7 +153,7 @@ average time per command, recent activity).
 
 ```bash
 # System tools
-sudo apt install -y nmap gobuster dirb whatweb sslscan dnsrecon curl whois dnsutils golang-go
+sudo apt install -y nmap gobuster dirb whatweb sslscan dnsrecon curl whois dnsutils
 # nikto is no longer in Debian trixie: git clone https://github.com/sullo/nikto and link program/nikto.pl
 
 # phoneinfoga

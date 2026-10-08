@@ -1,15 +1,13 @@
 FROM python:3.11-slim
 
-ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1 \
-    GOPATH=/root/go \
-    PATH="/root/go/bin:/usr/local/go/bin:${PATH}"
+ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1
+
 
 # Herramientas del sistema.
 # Cada paquete se instala por separado: si uno no existe en la distro no se cae el build.
 # Lo que falte lo instala docker-entrypoint.sh al arrancar el contenedor.
 RUN apt-get update \
-    && for p in nmap gobuster dirb whatweb sslscan dnsrecon curl whois dnsutils golang-go perl libnet-ssleay-perl ca-certificates; do \
+    && for p in nmap gobuster dirb whatweb sslscan dnsrecon curl whois dnsutils perl libnet-ssleay-perl ca-certificates; do \
          apt-get install -y --no-install-recommends "$p" || echo "AVISO: no se pudo instalar $p"; \
        done \
     && rm -rf /var/lib/apt/lists/*
@@ -22,8 +20,11 @@ RUN mkdir -p /opt/nikto \
          && chmod +x /opt/nikto/program/nikto.pl ) \
     || echo "AVISO: no se pudo instalar nikto (se reintentará al arrancar)"
 
-# phoneinfoga (binario Go)
-RUN go install github.com/sundowndev/phoneinfoga/v2/cmd/phoneinfoga@latest
+# phoneinfoga (binario precompilado de las releases)
+RUN ( case "$(uname -m)" in aarch64) a=arm64;; armv7l) a=armv7;; i686|i386) a=i386;; *) a=x86_64;; esac \
+      && curl -fsSL "https://github.com/sundowndev/phoneinfoga/releases/latest/download/phoneinfoga_Linux_$a.tar.gz" \
+         | tar -xz -C /usr/local/bin phoneinfoga ) \
+    || echo "AVISO: no se pudo instalar phoneinfoga (se reintentará al arrancar)"
 
 # CLI de Docker + Compose: el panel web los usa para lanzar docker-update.sh
 COPY --from=docker:27-cli /usr/local/bin/docker /usr/local/bin/docker
