@@ -134,7 +134,7 @@ def iniciar() -> Tuple[bool, str]:
             "-e", "HOME=/tmp",
             "-e", "GIT_CONFIG_COUNT=1", "-e", "GIT_CONFIG_KEY_0=safe.directory", "-e", "GIT_CONFIG_VALUE_0=*",
             "-v", f"{dockerSock}:{dockerSock}", "-v", f"{p}:{p}", "-w", p,
-            imagen, "sh", "-c", "sh ./docker-update.sh > log/update.log 2>&1",
+            "--entrypoint", "sh", imagen, "-c", "sh ./docker-update.sh > log/update.log 2>&1",
         )
     except Exception as e:
         return False, f"No se pudo lanzar la actualización: {e}"

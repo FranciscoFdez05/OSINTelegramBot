@@ -7,7 +7,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1
 # Cada paquete se instala por separado: si uno no existe en la distro no se cae el build.
 # Lo que falte lo instala docker-entrypoint.sh al arrancar el contenedor.
 RUN apt-get update \
-    && for p in nmap gobuster dirb whatweb sslscan dnsrecon curl whois dnsutils perl libnet-ssleay-perl ca-certificates; do \
+    && for p in git nmap gobuster dirb whatweb sslscan dnsrecon curl whois dnsutils perl libnet-ssleay-perl ca-certificates; do \
          apt-get install -y --no-install-recommends "$p" || echo "AVISO: no se pudo instalar $p"; \
        done \
     && rm -rf /var/lib/apt/lists/*
