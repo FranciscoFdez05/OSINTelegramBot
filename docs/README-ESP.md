@@ -34,6 +34,9 @@ Todos los comandos están restringidos a usuarios autorizados.
 | `/gobuster <url>` | Enumeración de rutas con wordlists comunes |
 | `/harvester <dominio>` | Cosecha emails y subdominios de fuentes públicas |
 | `/dnsrecon <dominio>` | Enumeración DNS avanzada (zone transfer, SRV, fuerza bruta) |
+| `/recon <dominio>` | Un único informe con whois, dns, dnsrecon, whatweb y sslscan |
+| `/history` | Tus últimas consultas, toca una para repetirla |
+| *(enviar una foto o archivo)* | Metadatos EXIF con exiftool. Envía las fotos como archivo: Telegram elimina los metadatos de las imágenes comprimidas (`/exif` lo explica) |
 
 ### Web
 | Comando | Descripción |
@@ -142,6 +145,8 @@ ejecutados, tasa de éxito, tiempo medio por comando y actividad reciente).
 - Contraseña: variable `PANEL_PASSWORD` o `config/panelPassword.txt`. El fichero solo guarda un hash PBKDF2. Si no existe, se genera una aleatoria, se muestra una sola vez en consola y se guarda hasheada. Para cambiarla, escribe la nueva en texto plano en ese fichero y reinicia: se convierte a hash sola.
 - Auditoría: cada comando queda en `log/audit.jsonl` (quién, comando, argumentos, resultado, código de salida, duración) y se ve en el panel. Los mensajes de usuarios no autorizados se ignoran sin responder (solo se anotan como *ignorado*, para que puedas autorizarlos desde el panel).
 - Ajustes (variables de entorno): `PANEL_HOST` (por defecto `0.0.0.0`), `PANEL_PORT` (por defecto `6050`), `PANEL_USER` (usuario opcional), `PANEL_ENABLED=0` para desactivarlo.
+- Protección del login: tras `PANEL_MAX_FAILS` intentos fallidos (5 por defecto) en 15 minutos, la IP queda bloqueada `PANEL_LOCKOUT` segundos (900 por defecto). Detrás de un proxy inverso, pon `PANEL_TRUST_PROXY=1` para tomar la IP del cliente de `X-Forwarded-For`. La cookie de sesión lleva `Secure` cuando el proxy envía `X-Forwarded-Proto: https` (`PANEL_COOKIE_SECURE=auto`, por defecto); fuérzala con `1` o desactívala con `0`.
+- Trabajos del bot: cada usuario puede ejecutar un comando a la vez (`/cancel` lo detiene y mata el proceso). Las herramientas pesadas (nmap, gobuster, harvester, dnsrecon, nikto, sherlock, maigret, holehe, h8mail, recon) comparten `MAX_HEAVY_JOBS` plazas (3 por defecto); el resto espera en cola. Mientras corre una herramienta, el mensaje «Ejecutando…» muestra el tiempo transcurrido y se sustituye por el resultado al terminar. Los resultados incluyen botones para pivotar a otras herramientas sobre el mismo objetivo, y si envías un email, IP, dominio o teléfono suelto, sin comando, el bot sugiere herramientas. Las consultas idénticas se sirven de una caché durante `CACHE_TTL` segundos (300 por defecto, 0 la desactiva). Las salidas de más de ~6000 caracteres se envían como fichero `.txt` con un resumen en el chat.
 - El nuevo token se aplica con el botón **Reiniciar bot**. El bot puede arrancar sin token y esperarlo desde el panel.
 - El panel va en HTTP plano: mantenlo en la LAN (no redirijas el puerto a internet) y usa una contraseña fuerte.
 
@@ -154,7 +159,7 @@ ejecutados, tasa de éxito, tiempo medio por comando y actividad reciente).
 
 ```bash
 # Herramientas del sistema
-sudo apt install -y nmap gobuster dirb whatweb sslscan dnsrecon curl whois dnsutils
+sudo apt install -y nmap gobuster dirb whatweb sslscan dnsrecon curl whois dnsutils libimage-exiftool-perl
 # nikto ya no está en Debian trixie: git clone https://github.com/sullo/nikto y enlaza program/nikto.pl
 
 # phoneinfoga

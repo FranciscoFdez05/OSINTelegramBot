@@ -31,6 +31,15 @@ pageFile = Path(__file__).resolve().parent / "index.html"
 tokenRegex = re.compile(r"^\d{5,}:[A-Za-z0-9_-]{30,}$")
 sessionTtl = 8 * 3600
 
+# Bloqueo de login: tras maxFallos fallos dentro de ventanaFallos, la IP queda bloqueada bloqueoSegundos
+maxFallos = int(os.environ.get("PANEL_MAX_FAILS", "5"))
+ventanaFallos = 15 * 60
+bloqueoSegundos = int(os.environ.get("PANEL_LOCKOUT", str(15 * 60)))
+# Detrás de un proxy inverso: usar X-Forwarded-For como IP del cliente
+confiarProxy = os.environ.get("PANEL_TRUST_PROXY", "0") == "1"
+# Cookie con Secure: "1" siempre, "0" nunca, "auto" (defecto) si el proxy indica X-Forwarded-Proto: https
+cookieSecure = os.environ.get("PANEL_COOKIE_SECURE", "auto").lower()
+
 
 pbkdfIter = 600_000
 
@@ -91,6 +100,34 @@ def crearServidor(host: str, port: int, passwordHash: str, stats: Stats, audit: 
     usuario = os.environ.get("PANEL_USER", "").strip()  # vacío = solo contraseña
     sesiones: Dict[str, float] = {}
     lockSesiones = threading.Lock()
+    # ip -> [fallos, inicio de la ventana, bloqueada hasta]
+    fallos: Dict[str, list] = {}
+    lockFallos = threading.Lock()
+
+    def reservarIntento(ip: str) -> int:
+        """Cuenta el intento ANTES de verificar la contraseña (así las peticiones en paralelo
+        no se cuelan) y devuelve los segundos de bloqueo que le quedan a la IP (0 = puede probar).
+        Si el login sale bien, limpiarFallos borra la cuenta."""
+        ahora = time.time()
+        with lockFallos:
+            if len(fallos) > 10000:  # no dejar crecer el dict sin límite
+                for k in [k for k, e in fallos.items() if e[2] < ahora and e[1] + ventanaFallos < ahora]:
+                    del fallos[k]
+            e = fallos.get(ip)
+            if e and e[2] > ahora:
+                return int(e[2] - ahora) + 1
+            if not e or e[1] + ventanaFallos < ahora:
+                e = fallos[ip] = [0, ahora, 0.0]
+            if e[0] >= maxFallos:
+                e[0], e[2] = 0, ahora + bloqueoSegundos
+                logEvent(f"Panel: IP {ip} bloqueada {bloqueoSegundos}s tras {maxFallos} logins fallidos")
+                return bloqueoSegundos
+            e[0] += 1
+            return 0
+
+    def limpiarFallos(ip: str) -> None:
+        with lockFallos:
+            fallos.pop(ip, None)
 
     class Handler(BaseHTTPRequestHandler):
         server_version = "OsintPanel"
@@ -127,6 +164,18 @@ def crearServidor(host: str, port: int, passwordHash: str, stats: Stats, audit: 
                 sesiones.pop(sid, None)
             return None
 
+        def _ip(self) -> str:
+            if confiarProxy:
+                reenviada = self.headers.get("X-Forwarded-For", "").split(",")[0].strip()
+                if reenviada:
+                    return reenviada
+            return self.client_address[0]
+
+        def _cookie(self, valor: str) -> str:
+            seguro = cookieSecure == "1" or (
+                cookieSecure == "auto" and self.headers.get("X-Forwarded-Proto", "").lower() == "https")
+            return valor + ("; Secure" if seguro else "")
+
         def _body(self) -> Dict[str, Any]:
             try:
                 n = min(int(self.headers.get("Content-Length", "0")), 4096)
@@ -160,18 +209,25 @@ def crearServidor(host: str, port: int, passwordHash: str, stats: Stats, audit: 
             datos = self._body()
 
             if self.path == "/api/login":
+                ip = self._ip()
+                # antes de verificar: PBKDF2 es caro y no debe calcularse para una IP bloqueada
+                restante = reservarIntento(ip)
+                if restante:
+                    return self._json(429, {"error": f"Demasiados intentos. Prueba en {restante // 60 + 1} min."},
+                                      {"Retry-After": str(restante)})
                 okPass = verificarPassword(str(datos.get("password", "")), passwordHash)
                 okUser = hmac.compare_digest(str(datos.get("user", "")).encode(), usuario.encode()) if usuario else True
                 if not (okPass and okUser):
                     time.sleep(1)
-                    logEvent(f"Panel: login fallido desde {self.client_address[0]}")
+                    logEvent(f"Panel: login fallido desde {ip}")
                     return self._json(401, {"error": "usuario o contraseña incorrectos" if usuario else "contraseña incorrecta"})
+                limpiarFallos(ip)
                 sid = secrets.token_urlsafe(32)
                 with lockSesiones:
                     sesiones[sid] = time.time() + sessionTtl
-                logEvent(f"Panel: login correcto desde {self.client_address[0]}")
+                logEvent(f"Panel: login correcto desde {ip}")
                 return self._json(200, {"ok": True},
-                                  {"Set-Cookie": f"sid={sid}; HttpOnly; SameSite=Strict; Path=/; Max-Age={sessionTtl}"})
+                                  {"Set-Cookie": self._cookie(f"sid={sid}; HttpOnly; SameSite=Strict; Path=/; Max-Age={sessionTtl}")})
 
             sid = self._sesion()
             if not sid:
@@ -180,7 +236,7 @@ def crearServidor(host: str, port: int, passwordHash: str, stats: Stats, audit: 
             if self.path == "/api/logout":
                 with lockSesiones:
                     sesiones.pop(sid, None)
-                return self._json(200, {"ok": True}, {"Set-Cookie": "sid=; Max-Age=0; Path=/"})
+                return self._json(200, {"ok": True}, {"Set-Cookie": self._cookie("sid=; HttpOnly; SameSite=Strict; Max-Age=0; Path=/")})
 
             if self.path in ("/api/users/add", "/api/users/del"):
                 try:
@@ -233,7 +289,7 @@ def crearServidor(host: str, port: int, passwordHash: str, stats: Stats, audit: 
                               "last": s.get("last")})
             filas.sort(key=lambda r: r["last"] or 0, reverse=True)
             return {"version": __version__, "users": filas, "token": enmascarar(api["getToken"]()),
-                    "audit": audit.ultimos(100),
+                    "audit": audit.ultimos(500),
                     "perf": {k: snap[k] for k in ("uptime", "totalCommands", "totalErrors", "avgSeconds", "commands", "recent")}}
 
     return ThreadingHTTPServer((host, port), Handler)

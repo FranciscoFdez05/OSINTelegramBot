@@ -32,6 +32,20 @@ button.sm{padding:3px 8px;font-size:12px}
 #msg{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:8px 14px;border-radius:6px;display:none}
 #login{max-width:340px;margin:20vh auto}
 [hidden]{display:none!important}
+.vwrap{position:relative;display:inline-block;font-size:14px;font-weight:400;vertical-align:middle}
+#ver{position:relative}#ver.new::after{content:'';position:absolute;top:-3px;right:-3px;width:8px;height:8px;border-radius:50%;background:var(--ok)}
+.pop{position:absolute;top:calc(100% + 6px);left:0;z-index:10;width:min(340px,calc(100vw - 32px));background:var(--card);border:1px solid var(--bd);border-radius:8px;padding:14px;box-shadow:0 8px 24px rgba(0,0,0,.25)}
+.pop h3{margin:0 0 8px;font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--mut)}
+.pop p{margin:2px 0}.pop .btns{display:grid;gap:8px;margin-top:12px}
+#app .card>h2{cursor:pointer;user-select:none;display:flex;align-items:center;gap:8px}
+#app .card>h2::before{content:'';width:6px;height:6px;border:solid var(--mut);border-width:0 2px 2px 0;transform:rotate(45deg);margin:0 4px 3px 2px;transition:transform .15s}
+#app .card.closed>h2::before{transform:rotate(-45deg);margin-bottom:0}
+#app .card.closed>h2{margin:0}#app .card.closed>:not(h2){display:none}
+.cnt{font-size:12px;font-weight:400;margin-left:auto}
+.filt{margin-bottom:10px}.filt input{flex:1;min-width:180px}
+select{padding:7px 10px;border:1px solid var(--bd);border-radius:6px;background:var(--bg);color:var(--fg);font:inherit}
+.tall{max-height:520px;overflow-y:auto}.tall thead th{position:sticky;top:0;background:var(--card);z-index:1}
+tr.day td{font-size:12px;font-weight:600;color:var(--mut);background:var(--bg);text-transform:capitalize;padding-top:8px}
 </style>
 </head>
 <body>
@@ -40,37 +54,39 @@ button.sm{padding:3px 8px;font-size:12px}
   <form class="row" id="loginForm"><input id="usr" placeholder="Usuario (si se configuró)" autocomplete="username" style="flex:1"><input type="password" id="pw" placeholder="Contraseña" autocomplete="current-password" required style="flex:1"><button>Entrar</button></form>
 </div>
 <main id="app" hidden>
-  <h1><span>OSINT Bot - Panel <small class="mut" id="ver"></small></span> <span class="row"><button class="sec sm" id="restart">Reiniciar bot</button><button class="sec sm" id="logout">Salir</button></span></h1>
+  <h1><span>OSINT Bot - Panel <span class="vwrap"><button class="sec sm" id="ver" aria-haspopup="true" aria-expanded="false">v-</button>
+    <div class="pop" id="vPop" hidden><h3>OSINT Bot</h3>
+      <p><span class="mut">Versión instalada:</span> <b id="vCur">-</b></p>
+      <p><span class="mut">Última en GitHub:</span> <b id="vLat">-</b> <span id="vTag"></span></p>
+      <div class="btns"><button id="vUpd">Actualizar</button><button class="sec" id="vCheck">Buscar actualizaciones</button></div>
+      <p class="mut" id="vInfo" style="margin-top:8px" hidden></p>
+      <pre id="vLog" class="scroll" style="max-height:220px;font-size:12px;margin:8px 0 0" hidden></pre>
+    </div></span></span> <span class="row"><button class="sec sm" id="restart">Reiniciar bot</button><button class="sec sm" id="logout">Salir</button></span></h1>
 
-  <div class="card"><h2>Versión</h2>
-    <p style="margin-top:0">Instalada: <b id="vCur">-</b> · Última en GitHub: <b id="vLat">-</b> <span id="vTag"></span></p>
-    <div class="row"><button class="sec sm" id="vCheck">Buscar actualizaciones</button><button class="sm" id="vUpd">Actualizar</button></div>
-    <p class="mut" id="vInfo" style="margin-bottom:0" hidden></p>
-    <pre id="vLog" class="scroll" style="max-height:220px;font-size:12px;margin:8px 0 0" hidden></pre>
-  </div>
-
-  <div class="card"><h2>Rendimiento</h2>
+  <div class="card" data-k="rendimiento"><h2>Rendimiento</h2>
     <div class="tiles" id="tiles"></div>
     <div class="scroll" style="margin-top:12px"><table><thead><tr><th>Comando</th><th>Ejecuciones</th><th>Errores</th><th>Tiempo medio</th></tr></thead><tbody id="cmds"></tbody></table></div>
   </div>
 
-  <div class="card"><h2>Usuarios</h2>
+  <div class="card" data-k="usuarios"><h2>Usuarios</h2>
     <form class="row" id="addForm" style="margin-bottom:12px"><input id="newId" inputmode="numeric" placeholder="ID de Telegram" required><button>Añadir usuario</button></form>
     <div class="scroll"><table><thead><tr><th>ID</th><th>Usuario</th><th>Estado</th><th>Comandos</th><th>Denegados</th><th>Último contacto</th><th></th></tr></thead><tbody id="users"></tbody></table></div>
   </div>
 
-  <div class="card"><h2>Token del bot</h2>
+  <div class="card" data-k="token"><h2>Token del bot</h2>
     <p class="mut">Actual: <code id="tokenNow"></code></p>
     <form class="row" id="tokenForm"><input id="token" type="password" placeholder="123456:ABC..." autocomplete="off" required style="flex:1;min-width:240px"><button>Guardar token</button></form>
     <p class="mut" style="margin-bottom:0">Tras guardar, pulsa «Reiniciar bot» para aplicarlo.</p>
   </div>
 
-  <div class="card"><h2>Actividad reciente</h2>
-    <div class="scroll"><table><thead><tr><th>Hora</th><th>Usuario</th><th>Comando</th><th>Resultado</th></tr></thead><tbody id="recent"></tbody></table></div>
+  <div class="card" data-k="recent"><h2>Actividad reciente <span class="cnt mut" id="recentCnt"></span></h2>
+    <div class="row filt" data-for="recent"><input type="search" data-f="q" placeholder="Buscar usuario, comando, argumentos..."><select data-f="cmd"><option value="">Todos los comandos</option></select><select data-f="res"><option value="">Todos los resultados</option></select></div>
+    <div class="scroll tall"><table><thead><tr><th>Hora</th><th>Usuario</th><th>Comando</th><th>Resultado</th></tr></thead><tbody id="recent"></tbody></table></div>
   </div>
 
-  <div class="card"><h2>Auditoría</h2>
-    <div class="scroll"><table><thead><tr><th>Hora</th><th>Usuario</th><th>Comando</th><th>Argumentos</th><th>Resultado</th><th>Exit</th><th>Duración</th></tr></thead><tbody id="audit"></tbody></table></div>
+  <div class="card" data-k="audit"><h2>Auditoría <span class="cnt mut" id="auditCnt"></span></h2>
+    <div class="row filt" data-for="audit"><input type="search" data-f="q" placeholder="Buscar usuario, comando, argumentos..."><select data-f="cmd"><option value="">Todos los comandos</option></select><select data-f="res"><option value="">Todos los resultados</option></select></div>
+    <div class="scroll tall"><table><thead><tr><th>Hora</th><th>Usuario</th><th>Comando</th><th>Argumentos</th><th>Resultado</th><th>Exit</th><th>Duración</th></tr></thead><tbody id="audit"></tbody></table></div>
   </div>
 </main>
 <div id="msg"></div>
@@ -102,9 +118,49 @@ async function refresh(){
     const btn=u.admin?'':u.allowed?`<button class="bad sm" data-del="${u.id}">Quitar</button>`:`<button class="sm" data-add="${u.id}">Autorizar</button>`;
     return `<tr><td>${u.id}</td><td>${esc(u.username?'@'+u.username:u.name||'-')}</td><td>${st}</td><td>${u.commands}</td><td>${u.denied}</td><td>${fmtD(u.last)}</td><td>${btn}</td></tr>`}).join('')||'<tr><td colspan=7 class="mut">Sin usuarios</td></tr>';
   $('tokenNow').textContent=s.token||'(no configurado)';
-  $('audit').innerHTML=s.audit.map(e=>`<tr><td>${fmtD(e.t)}</td><td>${esc(e.username?'@'+e.username:e.user??'-')} <span class="mut">${e.user??''}</span></td><td>/${esc(e.cmd)}</td><td>${esc((e.args||[]).join(' '))}</td><td class="${e.result==='ok'?'ok':'bad-t'}">${esc(e.result)}</td><td>${e.exit??''}</td><td>${e.seconds!=null?e.seconds+' s':''}</td></tr>`).join('')||'<tr><td colspan=7 class="mut">Sin eventos</td></tr>';
-  $('recent').innerHTML=p.recent.map(e=>`<tr><td>${fmtD(e.t)}</td><td>${e.user}</td><td>/${esc(e.cmd)}</td><td class="${e.status==='ok'?'ok':'bad-t'}">${esc(e.status)}</td></tr>`).join('')||'<tr><td colspan=4 class="mut">Sin actividad</td></tr>';
+  logs.audit.rows=s.audit;logs.recent.rows=p.recent;
+  for(const k in logs)renderLog(k);
 }
+// Actividad / auditoría: filtros, búsqueda y agrupación por día
+const resCls=r=>r==='ok'?'ok':r==='error'?'bad-t':'mut';
+const fmtH=t=>new Date(t*1000).toLocaleTimeString();
+const logs={
+  recent:{cols:4,empty:'Sin actividad',res:e=>e.status,text:e=>[e.user,e.cmd,e.status],
+    html:e=>`<td>${fmtH(e.t)}</td><td>${esc(e.user)}</td><td>/${esc(e.cmd)}</td><td class="${resCls(e.status)}">${esc(e.status)}</td>`},
+  audit:{cols:7,empty:'Sin eventos',res:e=>e.result,text:e=>[e.user,e.username,e.cmd,e.result,...(e.args||[])],
+    html:e=>`<td>${fmtH(e.t)}</td><td>${esc(e.username?'@'+e.username:e.user??'-')} <span class="mut">${e.user??''}</span></td><td>/${esc(e.cmd)}</td><td>${esc((e.args||[]).join(' '))}</td><td class="${resCls(e.result)}">${esc(e.result)}</td><td>${e.exit??''}</td><td>${e.seconds!=null?e.seconds+' s':''}</td>`},
+};
+for(const k in logs)logs[k].rows=[];
+function dayLabel(t){
+  const d=new Date(t*1000),hoy=new Date(),ayer=new Date(hoy-864e5);
+  if(d.toDateString()===hoy.toDateString())return 'Hoy';
+  if(d.toDateString()===ayer.toDateString())return 'Ayer';
+  return d.toLocaleDateString(undefined,{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+}
+function fillSel(sel,vals,fmt){
+  const cur=sel.value,first=sel.options[0].outerHTML;
+  sel.innerHTML=first+vals.map(v=>`<option value="${esc(v)}">${esc(fmt(v))}</option>`).join('');
+  sel.value=vals.includes(cur)?cur:'';
+}
+function renderLog(k){
+  const L=logs[k],f=document.querySelector(`.filt[data-for="${k}"]`),get=n=>f.querySelector(`[data-f="${n}"]`);
+  const uniq=fn=>[...new Set(L.rows.map(fn).filter(v=>v!=null&&v!==''))].sort();
+  fillSel(get('cmd'),uniq(e=>e.cmd),v=>'/'+v);fillSel(get('res'),uniq(L.res),v=>v);
+  const q=get('q').value.trim().toLowerCase(),cmd=get('cmd').value,res=get('res').value;
+  const rows=L.rows.filter(e=>(!cmd||e.cmd===cmd)&&(!res||L.res(e)===res)&&(!q||L.text(e).join(' ').toLowerCase().includes(q)));
+  const counts={};rows.forEach(e=>{const d=dayLabel(e.t);counts[d]=(counts[d]||0)+1});
+  let last=null,html='';
+  for(const e of rows){const d=dayLabel(e.t);if(d!==last){html+=`<tr class="day"><td colspan=${L.cols}>${esc(d)} · ${counts[d]}</td></tr>`;last=d}html+=`<tr>${L.html(e)}</tr>`}
+  $(k).innerHTML=html||`<tr><td colspan=${L.cols} class="mut">${L.rows.length?'Sin resultados para el filtro':L.empty}</td></tr>`;
+  $(k+'Cnt').textContent=rows.length===L.rows.length?`${rows.length}`:`${rows.length} de ${L.rows.length}`;
+}
+document.querySelectorAll('.filt').forEach(f=>f.oninput=()=>renderLog(f.dataset.for));
+// Tarjetas plegables (estado recordado en el navegador)
+let closed={};try{closed=JSON.parse(localStorage.getItem('panelClosed'))||{}}catch{}
+document.querySelectorAll('#app .card[data-k]').forEach(c=>{
+  c.classList.toggle('closed',!!closed[c.dataset.k]);
+  c.querySelector('h2').onclick=()=>{closed[c.dataset.k]=c.classList.toggle('closed');try{localStorage.setItem('panelClosed',JSON.stringify(closed))}catch{}};
+});
 $('loginForm').onsubmit=async e=>{e.preventDefault();try{await api('/api/login',{user:$('usr').value,password:$('pw').value});$('pw').value='';refresh()}catch(x){toast(x.message)}};
 $('logout').onclick=async()=>{await api('/api/logout',{});show(false)};
 $('addForm').onsubmit=async e=>{e.preventDefault();if(await act('/api/users/add',{id:$('newId').value}))$('newId').value=''};
@@ -121,10 +177,15 @@ async function updStatus(force){
   const info=u.checkError||(!u.enabled?u.reason:'')||(u.result==='ok'?'Última actualización: correcta.':u.result==='fail'?'Última actualización: FALLÓ (se vuelve a la versión anterior si es posible).':'');
   $('vInfo').hidden=!info;$('vInfo').textContent=info;
   $('vLog').hidden=!u.log;$('vLog').textContent=u.log;$('vLog').scrollTop=1e9;
+  $('ver').classList.toggle('new',!!u.available);
   $('vUpd').disabled=!u.enabled||u.running;$('vUpd').textContent=u.available?'Actualizar a '+u.latest:'Reconstruir / actualizar';
   clearInterval(upTimer);upTimer=u.running?setInterval(()=>updStatus(),2500):null;
 }
 $('vCheck').onclick=()=>updStatus(true);
+const vPop=(on)=>{$('vPop').hidden=!on;$('ver').setAttribute('aria-expanded',on);if(on)updStatus()};
+$('ver').onclick=e=>{e.stopPropagation();vPop($('vPop').hidden)};
+document.addEventListener('click',e=>{if(!$('vPop').hidden&&!$('vPop').contains(e.target))vPop(false)});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')vPop(false)});
 $('vUpd').onclick=async()=>{if(!confirm('El bot se reiniciará durante la actualización. ¿Continuar?'))return;await act('/api/update/start',{});updStatus()};
 refresh();updStatus();setInterval(()=>{if(!$('app').hidden)refresh()},10000);
 </script>

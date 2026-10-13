@@ -34,6 +34,9 @@ All commands are restricted to authorized users.
 | `/gobuster <url>` | Directory enumeration with common wordlists |
 | `/harvester <domain>` | Harvest emails and subdomains from public sources |
 | `/dnsrecon <domain>` | Advanced DNS enumeration (zone transfer, SRV, brute force) |
+| `/recon <domain>` | One combined report: whois, dns, dnsrecon, whatweb and sslscan |
+| `/history` | Your last queries, tap one to repeat it |
+| *(send a photo or file)* | EXIF/metadata via exiftool. Send photos as a file: Telegram strips metadata from compressed images (`/exif` shows how) |
 
 ### Web
 | Command | Description |
@@ -141,6 +144,8 @@ average time per command, recent activity).
 - Password: `PANEL_PASSWORD` env var, or `config/panelPassword.txt`. The file only stores a PBKDF2 hash. If it does not exist, a random password is generated, printed once in the console and saved hashed. To change it, write the new password in plain text in that file and restart: it is hashed automatically.
 - Audit: every command is logged in `log/audit.jsonl` (who, command, arguments, result, exit code, duration) and shown in the panel. Messages from users who are not authorized are ignored without any reply (only recorded as *ignorado*, so you can authorize them from the panel).
 - Settings (env vars): `PANEL_HOST` (default `0.0.0.0`), `PANEL_PORT` (default `6050`), `PANEL_USER` (optional username), `PANEL_ENABLED=0` to disable.
+- Login protection: after `PANEL_MAX_FAILS` failed logins (default 5) within 15 minutes, the IP is blocked for `PANEL_LOCKOUT` seconds (default 900). Behind a reverse proxy, set `PANEL_TRUST_PROXY=1` so the client IP is taken from `X-Forwarded-For`. The session cookie gets `Secure` when the proxy sends `X-Forwarded-Proto: https` (`PANEL_COOKIE_SECURE=auto`, the default); force it with `1` or disable it with `0`.
+- Bot jobs: each user can run one command at a time (`/cancel` stops it and kills the process). Heavy tools (nmap, gobuster, harvester, dnsrecon, nikto, sherlock, maigret, holehe, h8mail, recon) share `MAX_HEAVY_JOBS` slots (default 3); the rest wait in a queue. While a tool runs, the "Running…" message shows the elapsed time and is replaced by the result when it finishes. Results include inline buttons to pivot to other tools on the same target, and a loose email, IP, domain or phone number sent without a command gets tool suggestions. Identical queries are served from a cache for `CACHE_TTL` seconds (default 300, 0 disables it). Outputs longer than ~6000 characters are sent as a `.txt` file with a summary in the chat.
 - A new token is applied with the **Reiniciar bot** button. The bot can start without a token and wait for it from the panel.
 - **Updates**: the panel shows the installed version and the latest one on GitHub, and an **Actualizar** button runs `docker-update.sh` (git pull, rebuild, health check, automatic rollback) without SSH. The same script works from the shell: `./docker-update.sh`. It needs the stack started with `./docker-up.sh` (it mounts the project folder and `/var/run/docker.sock` into the bot container, which is root-equivalent on the host, so keep the panel password strong). The version lives in `version.py`; bump it when you publish a release.
 - The panel is plain HTTP: keep it on your LAN (do not forward the port to the internet) and use a strong password.
@@ -153,7 +158,7 @@ average time per command, recent activity).
 
 ```bash
 # System tools
-sudo apt install -y nmap gobuster dirb whatweb sslscan dnsrecon curl whois dnsutils
+sudo apt install -y nmap gobuster dirb whatweb sslscan dnsrecon curl whois dnsutils libimage-exiftool-perl
 # nikto is no longer in Debian trixie: git clone https://github.com/sullo/nikto and link program/nikto.pl
 
 # phoneinfoga

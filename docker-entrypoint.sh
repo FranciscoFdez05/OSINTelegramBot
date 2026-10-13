@@ -55,6 +55,7 @@ asegurar dnsrecon     apt  dnsrecon
 asegurar curl         apt  curl
 asegurar whois        apt  whois
 asegurar dig          apt  dnsutils
+asegurar exiftool     apt  libimage-exiftool-perl
 asegurar phoneinfoga  phoneinfoga -
 asegurar holehe       pip  holehe
 asegurar h8mail       pip  h8mail
